@@ -6,7 +6,7 @@
 
 ## 📌 نحوه کارکرد
 
-REN Gateway یک تونل VLESS روی WebSocket است که روی Render یا Railway (هاست رایگان) اجرا می‌شود.
+پروژه REN-RAILWAY-Gateway یک تونل VLESS روی WebSocket است که روی Render یا Railway (هاست رایگان) اجرا می‌شود.
 
 نیازی به سرور VPS ندارید. فقط کافیه پروژه را فورک کنید و روی Render یا Railway دیپلوی کنید.
 
