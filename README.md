@@ -207,7 +207,3 @@ REN Gateway یک تونل VLESS روی WebSocket است که روی Render یا 
 ## 📄 لایسنس
 
 MIT License
-
----
-
-## 🙏 ساخته شده توسط AssA
