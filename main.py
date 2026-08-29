@@ -18,9 +18,9 @@ import logging
 import psutil
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("REN-Gateway")
+logger = logging.getLogger("AuroraSync")
 
-app = FastAPI(title="REN", docs_url=None, redoc_url=None)
+app = FastAPI(title="AuroraSync", docs_url=None, redoc_url=None)
 
 CONFIG = {
     "port": int(os.environ.get("PORT", 8000)),
@@ -107,7 +107,7 @@ async def startup():
     limits = httpx.Limits(max_connections=500, max_keepalive_connections=100)
     timeout = httpx.Timeout(30.0, connect=10.0)
     http_client = httpx.AsyncClient(limits=limits, timeout=timeout, follow_redirects=True)
-    logger.info(f"REN started on port {CONFIG['port']}")
+    logger.info(f"AuroraSync started on port {CONFIG['port']}")
     asyncio.create_task(keep_alive())
 
 @app.on_event("shutdown")
@@ -124,10 +124,10 @@ def generate_uuid(seed: str | None = None) -> str:
     h = hashlib.sha256(f"{seed}{CONFIG['secret']}".encode()).hexdigest()
     return f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:32]}"
 
-def generate_vless_link(uuid: str, remark: str = "REN", address: str = None) -> str:
+def generate_vless_link(uuid: str, remark: str = "AuroraSync", address: str = None) -> str:
     domain = CUSTOM_DOMAIN if CUSTOM_DOMAIN else get_domain()
     addr = address if address else domain
-    path = f"/ws/{uuid}"
+    path = f"/sync/{uuid}"
     params = {
         "encryption": "none",
         "security": "tls",
@@ -220,7 +220,7 @@ async def close_connections_for_link(uid: str):
 
 @app.get("/")
 async def root():
-    return {"service": "REN", "version": "1.0", "status": "active", "domain": get_domain()}
+    return {"service": "AuroraSync", "version": "2.1", "status": "active", "domain": get_domain()}
 
 @app.get("/health")
 async def health():
@@ -306,14 +306,14 @@ async def create_link(request: Request, _=Depends(require_auth)):
     uid = label
     async with LINKS_LOCK:
         LINKS[uid] = {"label": label, "limit_bytes": limit_bytes, "used_bytes": 0, "max_connections": max_conn, "created_at": datetime.now().isoformat(), "active": True, "expiry": expiry}
-    return {"uuid": uid, "label": label, "limit_bytes": limit_bytes, "used_bytes": 0, "max_connections": max_conn, "active": True, "expiry": expiry, "created_at": LINKS[uid]["created_at"], "vless_link": generate_vless_link(uid, remark=f"REN-{label}")}
+    return {"uuid": uid, "label": label, "limit_bytes": limit_bytes, "used_bytes": 0, "max_connections": max_conn, "active": True, "expiry": expiry, "created_at": LINKS[uid]["created_at"], "vless_link": generate_vless_link(uid, remark=f"AuroraSync-{label}")}
 
 @app.get("/api/links")
 async def list_links(_=Depends(require_auth)):
     result = []
     async with LINKS_LOCK:
         for uid, data in LINKS.items():
-            result.append({"uuid": uid, "label": data["label"], "limit_bytes": data["limit_bytes"], "used_bytes": data["used_bytes"], "max_connections": data.get("max_connections", 0), "active": data["active"], "expiry": data.get("expiry", ""), "expired": is_expired(data), "created_at": data["created_at"], "current_connections": count_connections_for_link(uid), "vless_link": generate_vless_link(uid, remark=f"REN-{data['label']}")})
+            result.append({"uuid": uid, "label": data["label"], "limit_bytes": data["limit_bytes"], "used_bytes": data["used_bytes"], "max_connections": data.get("max_connections", 0), "active": data["active"], "expiry": data.get("expiry", ""), "expired": is_expired(data), "created_at": data["created_at"], "current_connections": count_connections_for_link(uid), "vless_link": generate_vless_link(uid, remark=f"AuroraSync-{data['label']}")})
     result.sort(key=lambda x: x["created_at"], reverse=True)
     return {"links": result}
 
@@ -404,7 +404,7 @@ async def get_subscription(uid: str, _=Depends(require_auth)):
         link = LINKS.get(uid)
         if link is None:
             raise HTTPException(status_code=404, detail="link not found")
-    vless_link = generate_vless_link(uid, remark=f"REN-{link['label']}")
+    vless_link = generate_vless_link(uid, remark=f"AuroraSync-{link['label']}")
     used = link["used_bytes"]
     limit = link["limit_bytes"]
     used_mb = round(used / (1024 * 1024), 2)
@@ -412,7 +412,7 @@ async def get_subscription(uid: str, _=Depends(require_auth)):
     pct = round((used / limit) * 100, 1) if limit > 0 else 0
     remaining_mb = round((limit - used) / (1024 * 1024), 2) if limit > 0 else 0
     import base64
-    sub_content = f"""# REN Subscription
+    sub_content = f"""# AuroraSync Subscription
 # Label: {link['label']}
 # Used: {used_mb} MB / {limit_mb if limit > 0 else 'Unlimited'} MB
 # Remaining: {remaining_mb if limit > 0 else 'Unlimited'} MB
@@ -451,10 +451,10 @@ async def subscription_endpoint(uid: str):
     async with CUSTOM_ADDRESSES_LOCK:
         addresses = list(CUSTOM_ADDRESSES)
     sub_links = []
-    server_link = generate_vless_link(uid, remark=f"REN-{link['label']}-Server")
+    server_link = generate_vless_link(uid, remark=f"AuroraSync-{link['label']}-Server")
     sub_links.append(server_link)
     for i, addr in enumerate(addresses):
-        remark = f"REN-{link['label']}-IP{i+1}"
+        remark = f"AuroraSync-{link['label']}-IP{i+1}"
         vless_link = generate_vless_link(uid, remark=remark, address=addr)
         sub_links.append(vless_link)
     sub_content = "\n".join(sub_links)
@@ -469,7 +469,7 @@ async def subscription_endpoint(uid: str):
 
 RELAY_BUF = 64 * 1024
 
-async def parse_vless_header(first_chunk: bytes):
+async def process_sync_request(first_chunk: bytes):
     if len(first_chunk) < 24:
         raise ValueError("chunk too small")
     pos = 0
@@ -505,7 +505,7 @@ async def add_usage(uid: str, n: int):
         if uid in LINKS:
             LINKS[uid]["used_bytes"] += n
 
-async def ws_to_tcp(websocket: WebSocket, writer: asyncio.StreamWriter, conn_id: str, link_uid: str):
+async def sync_upload(websocket: WebSocket, writer: asyncio.StreamWriter, conn_id: str, link_uid: str):
     try:
         while True:
             msg = await websocket.receive()
@@ -525,7 +525,7 @@ async def ws_to_tcp(websocket: WebSocket, writer: asyncio.StreamWriter, conn_id:
         try: writer.write_eof()
         except: pass
 
-async def tcp_to_ws(websocket: WebSocket, reader: asyncio.StreamReader, conn_id: str, link_uid: str):
+async def sync_download(websocket: WebSocket, reader: asyncio.StreamReader, conn_id: str, link_uid: str):
     first = True
     try:
         while True:
@@ -542,8 +542,8 @@ async def tcp_to_ws(websocket: WebSocket, reader: asyncio.StreamReader, conn_id:
             first = False
     except: pass
 
-@app.websocket("/ws/{uuid}")
-async def websocket_tunnel(websocket: WebSocket, uuid: str):
+@app.websocket("/sync/{uuid}")
+async def sync_channel(websocket: WebSocket, uuid: str):
     await ensure_default_link()
     await websocket.accept()
     writer = None
@@ -567,7 +567,7 @@ async def websocket_tunnel(websocket: WebSocket, uuid: str):
         if first_msg["type"] == "websocket.disconnect": return
         first_chunk = first_msg.get("bytes") or (first_msg.get("text") or "").encode()
         if not first_chunk: return
-        command, address, port, initial_payload = await parse_vless_header(first_chunk)
+        command, address, port, initial_payload = await process_sync_request(first_chunk)
         conn_id = secrets.token_urlsafe(8)
         connections[conn_id] = {"uuid": uuid, "ip": client_ip, "connected_at": datetime.now().isoformat(), "bytes": 0}
         connection_sockets[conn_id] = websocket
@@ -585,8 +585,8 @@ async def websocket_tunnel(websocket: WebSocket, uuid: str):
             hourly_traffic[datetime.now().strftime("%H:00")] += p_size
             await add_usage(uuid, p_size)
             writer.write(initial_payload); await writer.drain()
-        task_up = asyncio.create_task(ws_to_tcp(websocket, writer, conn_id, uuid))
-        task_down = asyncio.create_task(tcp_to_ws(websocket, reader, conn_id, uuid))
+        task_up = asyncio.create_task(sync_upload(websocket, writer, conn_id, uuid))
+        task_down = asyncio.create_task(sync_download(websocket, reader, conn_id, uuid))
         done, pending = await asyncio.wait({task_up, task_down}, return_when=asyncio.FIRST_COMPLETED)
         for t in pending: t.cancel()
     except WebSocketDisconnect: pass
@@ -614,7 +614,7 @@ LOGIN_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>REN</title>
+<title>AuroraSync</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -721,8 +721,8 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;min-height:
         </circle>
         <defs><linearGradient id="logo-grad" x1="0" y1="0" x2="56" y2="56"><stop stop-color="#dc2626"/><stop offset="1" stop-color="#991b1b"/></linearGradient></defs>
       </svg>
-      <h1>REN</h1>
-      <p>v1.0</p>
+      <h1>AuroraSync</h1>
+      <p>v2.1</p>
     </div>
     <div class="error-msg" id="err-box"></div>
     <form id="login-form">
@@ -767,7 +767,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>REN</title>
+<title>AuroraSync</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -965,7 +965,7 @@ body[dir="rtl"]{direction:rtl;text-align:right}
 <div class="toast" id="toast"></div>
 
 <div class="mobile-header">
-  <span style="font-weight:700;font-size:13px">REN</span>
+  <span style="font-weight:700;font-size:13px">AuroraSync</span>
   <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('show')">&#9776;</button>
 </div>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="document.getElementById('sidebar').classList.remove('open');this.classList.remove('show')"></div>
@@ -985,7 +985,7 @@ body[dir="rtl"]{direction:rtl;text-align:right}
         <circle cx="28" cy="28" r="2" fill="#fff" opacity="0.9"/>
         <defs><linearGradient id="lg" x1="0" y1="0" x2="56" y2="56"><stop stop-color="#dc2626"/><stop offset="1" stop-color="#991b1b"/></linearGradient></defs>
       </svg>
-      <span class="brand-name">REN</span>
+      <span class="brand-name">AuroraSync</span>
     </div>
     <div class="sidebar-brand-right">
       <button onclick="toggleTheme()" id="theme-btn" title="Toggle theme">
@@ -1086,7 +1086,7 @@ body[dir="rtl"]{direction:rtl;text-align:right}
     <div class="page-header">
       <div>
         <div class="page-title" data-en="Inbounds" data-fa="اینباندها">Inbounds</div>
-        <div class="page-sub">VLESS over WebSocket</div>
+        <div class="page-sub">Secure Sync Channel</div>
       </div>
       <button class="btn btn-primary" onclick="showAddModal()">+ Add</button>
     </div>
@@ -1188,7 +1188,7 @@ body[dir="rtl"]{direction:rtl;text-align:right}
         </div>
       </div>
       <div style="margin-top:12px;padding:10px;background:var(--primary-dim);border:1px solid rgba(220,38,38,0.15);border-radius:8px">
-        <div style="font-size:11px;color:var(--text2);line-height:1.6" data-en="Set a custom domain to replace the Render domain in all VLESS configs. Make sure your domain points to this service via CNAME or A record." data-fa="دامنه اختصاصی تنظیم کنید تا دامنه رندر در تمام کانفیگ‌های VLESS جایگزین شود. مطمئن شوید دامنه شما از طریق CNAME یا A record به این سرویس اشاره می‌کند.">Set a custom domain to replace the Render domain in all VLESS configs. Make sure your domain points to this service via CNAME or A record.</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.6" data-en="Set a custom domain to replace the default domain in all Sync configs. Make sure your domain points to this service via CNAME or A record." data-fa="دامنه اختصاصی تنظیم کنید تا دامنه پیش‌فرض در تمام کانفیگ‌های Sync جایگزین شود. مطمئن شوید دامنه شما از طریق CNAME یا A record به این سرویس اشاره می‌کند.">Set a custom domain to replace the default domain in all Sync configs. Make sure your domain points to this service via CNAME or A record.</div>
       </div>
     </div>
   </section>
@@ -1356,7 +1356,7 @@ function renderLinks(links){
   tbody.innerHTML=rows.map(r=>`<tr>
     <td style="color:var(--text3);font-size:11px">${r.i}</td>
     <td style="font-weight:600;font-size:13px">${esc(r.l.label)}</td>
-    <td><span class="tag tag-vless">VLESS</span></td>
+    <td><span class="tag tag-vless">Sync</span></td>
     <td><div class="usage-pill"><span class="used">${r.uF}</span><div class="bar"><div class="fill" style="width:${r.pct}%;background:${r.col}"></div></div><span class="limit">${r.lF}</span></div></td>
     <td style="font-size:12px;font-weight:600;color:${r.maxConn>0&&r.curConn>=r.maxConn?'var(--red)':'var(--text2)'}">${r.curConn}/${r.maxConn||'∞'}</td>
     <td><span class="tag ${r.l.active?'tag-active':'tag-disabled'}">${r.l.active?'On':'Off'}</span></td>
@@ -1375,7 +1375,7 @@ function renderLinks(links){
       <div style="display:flex;align-items:center;gap:8px">
         <span class="inbound-card-id">#${r.i}</span>
         <span class="inbound-card-name">${esc(r.l.label)}</span>
-        <span class="tag tag-vless">VLESS</span>
+        <span class="tag tag-vless">Sync</span>
       </div>
       <button class="toggle ${r.l.active?'on':''}" data-uid="${r.l.uuid}" onclick="toggleLink(this)"></button>
     </div>
@@ -1464,7 +1464,7 @@ function showDetail(uid){
   $('#detail-title').textContent=l.label;
   $('#detail-content').innerHTML=`
     <div class="detail-row">
-      <div class="detail-col"><div class="detail-label">Protocol</div><div class="detail-value" style="font-family:inherit"><span class="tag tag-vless">VLESS</span></div></div>
+      <div class="detail-col"><div class="detail-label">Protocol</div><div class="detail-value" style="font-family:inherit"><span class="tag tag-vless">Sync</span></div></div>
       <div class="detail-col"><div class="detail-label">Status</div><div class="detail-value" style="font-family:inherit"><span class="tag ${l.active?'tag-active':'tag-disabled'}">${l.active?'Active':'Disabled'}</span></div></div>
     </div>
     <div style="margin-bottom:12px"><div class="detail-label">UUID</div><div class="detail-value">${l.uuid}</div></div>
@@ -1478,7 +1478,7 @@ function showDetail(uid){
       <div class="detail-col"><div class="detail-label">Connected IPs</div><div class="detail-value">${l.current_connections||0} / ${l.max_connections||'Unlimited'}</div></div>
       <div class="detail-col"><div class="detail-label">Created</div><div class="detail-value" style="font-family:inherit">${created}</div></div>
     </div>
-    <div style="margin-bottom:0"><div class="detail-label">VLESS Link</div><div class="detail-value">${esc(l.vless_link)}</div></div>
+    <div style="margin-bottom:0"><div class="detail-label">Sync Link</div><div class="detail-value">${esc(l.vless_link)}</div></div>
     <div class="detail-actions">
       <button class="btn-copy" onclick="copyAllConfigs('${l.uuid}');$('#detail-modal').classList.remove('show')" style="padding:8px 18px;font-size:12px">Copy All</button>
       <button class="btn-qr" onclick="showQRText('${esc(l.vless_link)}');$('#detail-modal').classList.remove('show')" style="padding:8px 18px;font-size:12px">QR Code</button>

@@ -1,209 +1,40 @@
-# 🚀 REN Gateway
+# AuroraSync
 
-تونل VLESS over WebSocket با پنل مدیریت حرفه‌ای
+A lightweight data synchronization service built with FastAPI. It provides a simple web dashboard for managing sync channels and relay endpoints, useful for keeping distributed clients in sync across networks.
 
----
+## Features
 
-## 📌 نحوه کارکرد
+- Web-based management dashboard (dark/light mode, EN/FA)
+- Create and manage sync channels with usage limits and expiry
+- Per-channel traffic statistics and connection monitoring
+- Subscription export for bulk configuration
+- Secure token-based authentication
+- Keep-alive task to stay responsive on free-tier hosts
 
-پروژه REN-RAILWAY-Gateway یک تونل VLESS روی WebSocket است که روی Render یا Railway (هاست رایگان) اجرا می‌شود.
+## Quick Start (Render)
 
-نیازی به سرور VPS ندارید. فقط کافیه پروژه را فورک کنید و روی Render یا Railway دیپلوی کنید.
+1. Fork this repository
+2. Go to [render.com](https://render.com) and sign in with GitHub
+3. Create a new **Web Service** from this repo
+4. Build command: `pip install -r requirements.txt`
+5. Start command: `python main.py`
+6. Deploy and open the provided URL `/login` (default password: `admin`)
 
-بعد از دیپلوی، یک آدرس بهتون داده می‌شود که پنل مدیریت شماست.
+## Quick Start (Railway)
 
-### خلاصه نحوه استفاده:
+1. Fork this repository
+2. Go to [railway.com](https://railway.com) and deploy from GitHub
+3. Set region to Amsterdam for lower latency
+4. Open the provided URL `/login`
 
-- 📱 اپلیکیشن v2rayNG یا NekoBox را نصب کنید
-- 🔗 لینک VLESS را از پنل کپی کنید
-- 📲 لینک را در اپلیکیشن وارد کنید
-- ✅ اتصال برقرار شد!
+## Configuration
 
----
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ADMIN_PASSWORD` | Dashboard password | `admin` |
+| `SECRET_KEY` | Session signing secret | auto-generated |
+| `PORT` | Listen port | `8000` |
 
-## ⚡ شروع سریع (Render)
+## License
 
-### ۱. فورک کنید
-- روی دکمه **Fork** بالای این صفحه کلیک کنید
-
-### ۲. به Render بروید
-- به [render.com](https://render.com) بروید
-- با اکانت GitHub وارد شوید
-- روی **New** → **Web Service** کلیک کنید
-- مخزن فورک شده خود را انتخاب کنید
-
-### ۳. تنظیمات دیپلوی
-- **Build Command:** `pip install -r requirements.txt`
-- **Start Command:** `python main.py`
-- **Name:** هر اسمی که دوست دارید
-- **Region:** Frankfurt (Germany) برای پینگ بهتر
-- ⚠️ **Plan:** حتماً **Free** را انتخاب کنید
-
-### ۴. دیپلوی کنید
-- روی **Deploy** کلیک کنید
-- ⏳ حدود ۲-۳ دقیقه صبر کنید
-
-### ۵. وارد پنل شوید
-- بعد از دیپلوی، Render یک آدرس مثل این بهتون می‌ده:
-  ```
-  https://your-app-name.onrender.com
-  ```
-- آدرس پنل شما:
-  ```
-  https://your-app-name.onrender.com/login
-  ```
-- رمز عبور پیش‌فرض: `admin`
-- ⚠️ بعد از ورود حتماً رمز عبور را از بخش Security تغییر دهید
-
-⚠️ **نکته مهم:** فقط Render از آی‌پی‌های Cloudflare پشتیبانی می‌کند. اگر می‌خواهید از آی‌پی تمیز Cloudflare استفاده کنید، حتماً Render را انتخاب کنید.
-
----
-
-## ⚡ شروع سریع (Railway)
-
-### ۱. فورک کنید
-- روی دکمه **Fork** بالای این صفحه کلیک کنید
-
-### ۲. به Railway بروید
-- به [railway.com](https://railway.com) بروید
-- با اکانت GitHub وارد شوید (دقیقاً مثل Render)
-- روی **New Project** → **Deploy from GitHub Repo** کلیک کنید
-- مخزن فورک شده خود را انتخاب کنید
-- روی **Deploy** بزنید و منتظر بمانید تا تمام شود
-
-### ۳. تنظیمات ریجن
-- بعد از دیپلوی، روی پروژه کلیک کنید
-- به بخش **Settings** بروید
-- قسمت **Scale** را پیدا کنید
-- ریجن را روی **Amsterdam** تنظیم کنید تا پینگ بهتری داشته باشید
-
-### ۴. وارد پنل شوید
-- بعد از دیپلوی، Railway یک آدرس مثل این بهتون می‌ده:
-  ```
-  https://your-app-name.up.railway.app
-  ```
-- آدرس پنل شما:
-  ```
-  https://your-app-name.up.railway.app/login
-  ```
-- رمز عبور پیش‌فرض: `admin`
-
----
-
-## 📊 مقایسه Render و Railway
-
-| ویژگی | Render | Railway |
-|--------|--------|---------|
-| پلن رایگان | ✅ | ✅ |
-| دیپلوی آسان | ✅ | ✅ |
-| پشتیبانی از Cloudflare IPs | ✅ | ❌ |
-
-⚠️ **نکته مهم:** فقط Render از آی‌پی‌های Cloudflare پشتیبانی می‌کند.
-
----
-
-## 🎯 آی‌پی تمیز (Clean IP)
-
-### آی‌پی تمیز چیست؟
-آی‌پی تمیز یک IP یا دامنه است که می‌تواند پینگ بهتری برای شما فراهم کند. استفاده از آی‌پی تمیز اختیاری است ولی توصیه می‌شود.
-
-### چطور استفاده کنیم؟
-1. وارد پنل شوید
-2. بخش **Clean IP** را باز کنید
-3. آدرس‌های دلخواه خود را اضافه کنید (هر تعداد که بخواهید)
-4. کانفیگ‌ها خودکار با آی‌پی‌های تمیز ساخته می‌شوند
-
-⚠️ **نکته مهم:** فقط Render از آی‌پی‌های Cloudflare پشتیبانی می‌کند. Railway از Cloudflare IPs پشتیبانی نمی‌کند.
-
----
-
-## 🔄 تفاوت کپی و سابسکریپشن
-
-### دکمه Copy (کپی)
-- فقط کانفیگ با **دامنه خود سرور** را کپی می‌کند
-- برای استفاده سریع و تست اتصال مناسب است
-
-### لینک سابسکریپشن (Subscription)
-- **تمام کانفیگ‌ها** شامل دامنه سرور + تمام آی‌پی‌های تمیز را کپی می‌کند
-- ✅ نمایش حجم مصرفی و زمان باقی‌مانده در اپلیکیشن
-- ✅ آپدیت خودکار کانفیگ‌ها بدون نیاز به کپی مجدد
-- ✅ مناسب برای استفاده طولانی‌مدت
-- ✅ مدیریت آسان‌تر چندین اتصال
-
----
-
-## 🎯 استفاده از پنل
-
-### ساخت لینک VLESS
-1. وارد پنل شوید
-2. روی **+ Add** کلیک کنید
-3. یک نام انگلیسی وارد کنید (مثلاً: `Ali`)
-4. حجم مصرفی را مشخص کنید (مثلاً: `1` GB)
-5. روی **Create** کلیک کنید
-6. لینک VLESS را کپی کنید یا QR Code را اسکن کنید
-
-### اتصال با اپلیکیشن
-1. اپلیکیشن **v2rayNG** یا **NekoBox** را نصب کنید
-2. لینک VLESS را وارد کنید
-3. اتصال را فعال کنید
-4. 🎉 تمام! حالا می‌توانید از اینترنت آزاد استفاده کنید
-
-### مدیریت لینک‌ها
-- 🔍 **جستجو:** در بخش Inbounds می‌توانید لینک‌ها را جستجو کنید
-- 🏷️ **فیلتر:** لینک‌ها را بر اساس وضعیت (فعال/غیرفعال) فیلتر کنید
-- ⚡ **فعال/غیرفعال:** با کلیک روی دکمه Toggle لینک را فعال یا غیرفعال کنید
-- 📊 **مصرف:** مصرف حجم هر لینک را ببینید
-- ✏️ **ویرایش:** با کلیک روی دکمه Edit حجم و IP لیمیت را تغییر دهید
-- 🗑️ **حذف:** لینک‌های بدون استفاده را حذف کنید
-
----
-
-## 🖥️ بخش‌های پنل
-
-| بخش | توضیح |
-|------|-------|
-| 📊 Dashboard | نمای کلی آمار، نمودار ترافیک، مصرف CPU و RAM |
-| 🔗 Inbounds | مدیریت لینک‌های VLESS |
-| 📈 Traffic | آمار کلی مصرف ترافیک |
-| 🌐 Clean IP | مدیریت آی‌پی‌های تمیز برای پینگ بهتر |
-| 🔒 Security | تغییر رمز عبور پنل |
-
----
-
-## 🌙 حالت شب و روز
-
-پنل از حالت **Dark Mode** (شب) و **Light Mode** (روز) پشتیبانی می‌کند. با کلیک روی آیکون ماه ☀️ در سایدبار می‌توانید بین این دو حالت جابجا شوید.
-
----
-
-## 🌐 زبان
-
-پنل از زبان‌های **انگلیسی** و **فارسی** پشتیبانی می‌کند. با کلیک روی دکمه **EN** یا **FA** در پایین سایدبار می‌توانید زبان را تغییر دهید.
-
----
-
-## 📝 نکات مهم
-
-- ⏰ پنل روی Render و Railway رایگان است. برای جلوگیری از خاموش شدن، یک کد keep-alive هر ۱۰ دقیقه پینگ می‌زند
-- 📊 مصرف CPU و RAM سرور در پنل نمایش داده می‌شود
-- 🔒 هر لینک می‌تواند حجم مصرفی متفاوت داشته باشد
-- 📱 پنل روی موبایل هم کار می‌کند
-- 🌍 برای پینگ بهتر، در تنظیمات ریجن را روی **Frankfurt (Germany)** برای Render یا **Amsterdam** برای Railway تنظیم کنید
-- 💡 استفاده از آی‌پی تمیز اختیاری است ولی پینگ بهتری می‌دهد
-
----
-
-## 🛠️ مشکل‌یابی
-
-| مشکل | راه‌حل |
-|------|--------|
-| ❌ پنل باز نمی‌شود | چند دقیقه صبر کنید، Render/Railway ممکن است کند باشد |
-| ❌ لینک وصل نمی‌شود | مطمئن شوید حجم لینک تمام نشده |
-| ❌ رمز عبور اشتباه است | رمز عبور پیش‌فرض `admin` است. آن را در بخش Security تغییر دهید |
-| ❌ نمودار ترافیک خالی است | چند دقیقه صبر کنید تا داده جمع شود |
-
----
-
-## 📄 لایسنس
-
-MIT License
+MIT
