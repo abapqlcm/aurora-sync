@@ -115,7 +115,24 @@ async def shutdown():
         await http_client.aclose()
 
 def get_domain() -> str:
-    return os.environ.get("RENDER_EXTERNAL_URL", os.environ.get("RAILWAY_PUBLIC_DOMAIN", "localhost")).replace("https://", "").replace("http://", "")
+    """Public domain of this deployment.
+
+    Priority:
+      1. CUSTOM_DOMAIN (set from panel)
+      2. AURORA_DOMAIN env (manual override)
+      3. RENDER_EXTERNAL_URL / RAILWAY_PUBLIC_DOMAIN (other hosts)
+      4. WASMER APP_HOST env (set by Wasmer Edge automatically, e.g. aurora-sync.wasmer.app)
+    """
+    if CUSTOM_DOMAIN:
+        return CUSTOM_DOMAIN
+    v = os.environ.get("AURORA_DOMAIN") or os.environ.get("RENDER_EXTERNAL_URL") \
+        or os.environ.get("RAILWAY_PUBLIC_DOMAIN")
+    if v:
+        return str(v).replace("https://", "").replace("http://", "").rstrip("/")
+    app_host = os.environ.get("APP_HOST") or os.environ.get("WASMER_APP_HOST")
+    if app_host:
+        return str(app_host).replace("https://", "").replace("http://", "").rstrip("/")
+    return "localhost"
 
 def generate_uuid(seed: str | None = None) -> str:
     if seed is None:

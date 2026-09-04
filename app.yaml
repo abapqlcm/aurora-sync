@@ -9,5 +9,6 @@ env:
   PYTHONPATH: /src
   PORT: "80"
   ADMIN_PASSWORD: "admin"
+  AURORA_DOMAIN: "aurora-sync.wasmer.app"
 scaling:
   mode: single_concurrency
