@@ -2,7 +2,7 @@
 kind: wasmer.io/App.v0
 name: aurora-sync
 description: AuroraSync - lightweight data sync service (FastAPI)
-package: abapqlcm/aurora-sync@0.1.0
+package: .
 cli_args:
   - -m
   - uvicorn
