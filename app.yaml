@@ -1,0 +1,26 @@
+---
+kind: wasmer.io/App.v0
+name: aurora-sync
+description: AuroraSync - lightweight data sync service (FastAPI)
+package: abapqlcm/aurora-sync@0.1.0
+cli_args:
+  - -m
+  - uvicorn
+  - main:app
+  - --host
+  - 0.0.0.0
+  - --port
+  - "80"
+  - --loop
+  - asyncio
+env:
+  PYTHONEXECUTABLE: /bin/python
+  PYTHONPATH: /src
+  PORT: "80"
+  ADMIN_PASSWORD: "admin"
+capabilities:
+  instaboot:
+    requests:
+      - path: /
+scaling:
+  mode: single_concurrency
